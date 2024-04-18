@@ -1,0 +1,348 @@
+---
+title: "Untitled"
+author: "Ben Glasgall"
+date: "2024-04-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(reshape2)
+library(rpart)
+library(DescTools)
+library(tidyr)
+library(ggtext)
+library(knitr)
+library(zoo)
+library(forecast)
+library(lubridate)
+library(plotly)
+library(readr)
+library(viridis)
+library(stats)
+library(factoextra)
+library (readr)
+library(ggpubr)
+library(janitor)
+library(RColorBrewer)
+library(gridExtra)
+library(stringr)
+
+ setwd("C:/Users/benja/OneDrive/Desktop/ACS_UCF MS Course Work/Spring 2024/IDS6916 Research Practicum")
+```
+
+```{r}
+scores_data <- read_csv("averaged_scores1.csv", show_col_types = FALSE)
+
+# Check the column names
+colnames(scores_data)
+
+# Rename the first column to 'Subject'
+names(scores_data)[1] <- 'Subject'
+
+# Pivot the data to long format
+scores_data_long <- scores_data %>%
+  pivot_longer(
+    cols = -Subject, 
+    names_to = "Agent_Group", 
+    values_to = "Score"
+  ) %>%
+  mutate(Agent_Group = replace_na(Agent_Group, "All 3"))
+
+# Ensure 'Agent_Group' is a factor with all expected levels
+scores_data_long$Agent_Group <- factor(
+  scores_data_long$Agent_Group, 
+  levels = c("GPT-4", "Claude 3", "Gemini", "GPT-4 & Claude 3", "GPT-4 & Gemini", "Claude 3 & Gemini", "All 3")
+)
+
+# Define the color vectors
+all_colors <- c("GPT-4" = "white", "Claude 3" = "gray", "Gemini" = "black",
+                "GPT-4 & Claude 3" = "red", "GPT-4 & Gemini" = "yellow", 
+                "Claude 3 & Gemini" = "blue", "All 3" = "brown")
+
+# Specify the dodge width for spacing between bars within the same group
+dodge_width <- 0.8
+
+# Create the grouped barplot
+barplot <- ggplot(scores_data_long, aes(x = Subject, y = Score * 100, fill = Agent_Group)) +
+  geom_bar(stat = "identity", position = position_dodge(dodge_width), width = 0.7, color = "black") +
+  scale_fill_manual(values = all_colors) +
+  theme_minimal() +
+  labs(title = "Comparison of Agent Groups across Different Subjects",
+       x = "Subject",
+       y = "Percentage") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 18), # Increase title font size
+    legend.title = element_blank(),
+    axis.title.x = element_text(size = 14), # Increase x axis title font size
+    axis.title.y = element_text(size = 14), # Increase y axis title font size
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12), # Increase x axis text font size
+    axis.text.y = element_text(size = 12), # Increase y axis text font size
+    legend.text = element_text(size = 12), # Increase legend text font size
+    legend.position = "bottom"
+  ) +
+  scale_y_continuous(
+    breaks = c(25, 50, 75, 100), 
+    labels = percent_format(scale = 1),
+    expand = expansion(mult = c(0, 0.1))
+  )
+
+# Print the plot to display it
+print(barplot)
+```
+
+
+```{r}
+```
+```{r}
+# Assuming the necessary libraries have been loaded as previously
+
+# Read the CSV files
+gpt_skill_results <- read_csv("GPT_Skill_Results.csv", show_col_types = FALSE)
+claude_skill_results <- read_csv("Claude_Skill_Results.csv", show_col_types = FALSE)
+gemini_skill_results <- read_csv("Gemini_Skill_Results.csv", show_col_types = FALSE)
+
+# Check the first few rows of each dataframe
+head(gpt_skill_results)
+head(claude_skill_results)
+head(gemini_skill_results)
+
+# Calculate accuracy for each skill for each model and add a column to indicate the model
+gpt_accuracy <- gpt_skill_results %>%
+  mutate(Model = "GPT") %>%
+  group_by(`Skill Assessed`, Model) %>%
+  summarise(Accuracy = mean(Correctness, na.rm = TRUE) * 100, .groups = 'drop')
+
+claude_accuracy <- claude_skill_results %>%
+  mutate(Model = "Claude") %>%
+  group_by(`Skill Assessed`, Model) %>%
+  summarise(Accuracy = mean(Correctness, na.rm = TRUE) * 100, .groups = 'drop')
+
+gemini_accuracy <- gemini_skill_results %>%
+  mutate(Model = "Gemini") %>%
+  group_by(`Skill Assessed`, Model) %>%
+  summarise(Accuracy = mean(Correctness, na.rm = TRUE) * 100, .groups = 'drop')
+
+# Combine the results into one dataframe
+combined_results <- bind_rows(gpt_accuracy, claude_accuracy, gemini_accuracy)
+
+# Create the plot
+ggplot(combined_results, aes(x = `Skill Assessed`, y = Accuracy, fill = Model)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.6) +
+  scale_fill_manual(values = c("GPT" = "#1b9e77", "Claude" = "#d95f02", "Gemini" = "#7570b3")) +
+  labs(title = "Accuracy by Skill Across Models", x = "Skill Assessed", y = "Accuracy (%)") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14), # Increase size for x axis labels
+        axis.text.y = element_text(size = 14), # Increase size for y axis labels
+        plot.title = element_text(size = 18)) # Increase size for the plot title
+```
+
+
+```{r}
+# Read the CSV file, suppressing the column type message
+gpt_skill_results <- read_csv("GPT_Skill_Results.csv", show_col_types = FALSE)
+
+# Calculate accuracy for each skill
+accuracy_by_skill <- gpt_skill_results %>%
+  group_by(`Skill Assessed`) %>%
+  summarise(
+    Total_Questions = n(),
+    Correct = sum(Correctness),
+    Accuracy_Percentage = Correct / Total_Questions * 100
+  )
+
+# Display the summarized data
+print(accuracy_by_skill)
+
+# Bar plot of accuracy by skill
+ggplot(accuracy_by_skill, aes(x = `Skill Assessed`, y = Accuracy_Percentage, fill = `Skill Assessed`)) +
+  geom_bar(stat = "identity", width = 0.7) +  # Adjust bar width to reduce gap
+  geom_text(
+    aes(label = paste0(round(Accuracy_Percentage), "%")),  # Round the percentages
+    position = position_stack(vjust = 1.05),  # Position the text above the bars
+    size = 2.5,  # Slightly decrease font size
+    color = "black"
+  ) +
+  scale_y_continuous(
+    labels = label_percent(scale = 1),  # Format Y-axis labels as whole percentages
+    breaks = seq(0, 100, by = 25),  # Set Y-axis breaks
+    limits = c(0, 100)  # Set Y-axis limits from 0 to 100%
+  ) +
+  scale_fill_brewer(palette = "Paired") + # Use color-blind friendly color palette
+  theme_minimal() +
+  labs(title = "GPT-4 Accuracy by Skill", x = "Skill Assessed", y = "Accuracy (%)") +
+  theme(
+    axis.text.x = element_text(angle = -45, hjust = 0, vjust = 1, size = 8, face = "bold"),  # Tilt, resize and bold x-axis labels
+    legend.position = "bottom",
+    axis.ticks.length = unit(-2, "pt"), # Shorten the tick length
+    axis.text = element_text(color = "grey20"), # Darker text for better contrast
+    plot.title = element_text(hjust = 0.5, size = 14) # Center and set title size
+  ) +
+  guides(fill = guide_legend(title = "Skills")) + # Adjust legend title
+  # Wrap the long skill label
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+```
+```{r}
+# Read the CSV file, suppressing the column type message
+gemini_skill_results <- read_csv("Gemini_Skill_Results.csv", show_col_types = FALSE)
+
+# Calculate accuracy for each skill
+accuracy_by_skill <- gpt_skill_results %>%
+  group_by(`Skill Assessed`) %>%
+  summarise(
+    Total_Questions = n(),
+    Correct = sum(Correctness),
+    Accuracy_Percentage = Correct / Total_Questions * 100
+  )
+
+# Display the summarized data
+print(accuracy_by_skill)
+
+# Bar plot of accuracy by skill
+ggplot(accuracy_by_skill, aes(x = `Skill Assessed`, y = Accuracy_Percentage, fill = `Skill Assessed`)) +
+  geom_bar(stat = "identity", width = 0.7) +  # Adjust bar width to reduce gap
+  geom_text(
+    aes(label = paste0(round(Accuracy_Percentage), "%")),  # Round the percentages
+    position = position_stack(vjust = 1.05),  # Position the text above the bars
+    size = 2.5,  # Slightly decrease font size
+    color = "black"
+  ) +
+  scale_y_continuous(
+    labels = label_percent(scale = 1),  # Format Y-axis labels as whole percentages
+    breaks = seq(0, 100, by = 25),  # Set Y-axis breaks
+    limits = c(0, 100)  # Set Y-axis limits from 0 to 100%
+  ) +
+  scale_fill_brewer(palette = "Paired") + # Use color-blind friendly color palette
+  theme_minimal() +
+  labs(title = "Gemini Accuracy by Skill", x = "Skill Assessed", y = "Accuracy (%)") +
+  theme(
+    axis.text.x = element_text(angle = -45, hjust = 0, vjust = 1, size = 8, face = "bold"),  # Tilt, resize and bold x-axis labels
+    legend.position = "bottom",
+    axis.ticks.length = unit(-2, "pt"), # Shorten the tick length
+    axis.text = element_text(color = "grey20"), # Darker text for better contrast
+    plot.title = element_text(hjust = 0.5, size = 14) # Center and set title size
+  ) +
+  guides(fill = guide_legend(title = "Skills")) + # Adjust legend title
+  # Wrap the long skill label
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+```
+```{r}
+# Read the CSV file, suppressing the column type message
+claude_skill_results <- read_csv("Claude_Skill_Results.csv", show_col_types = FALSE)
+
+# Calculate accuracy for each skill
+accuracy_by_skill <- gpt_skill_results %>%
+  group_by(`Skill Assessed`) %>%
+  summarise(
+    Total_Questions = n(),
+    Correct = sum(Correctness),
+    Accuracy_Percentage = Correct / Total_Questions * 100
+  )
+
+# Display the summarized data
+print(accuracy_by_skill)
+
+# Bar plot of accuracy by skill
+ggplot(accuracy_by_skill, aes(x = `Skill Assessed`, y = Accuracy_Percentage, fill = `Skill Assessed`)) +
+  geom_bar(stat = "identity", width = 0.7) +  # Adjust bar width to reduce gap
+  geom_text(
+    aes(label = paste0(round(Accuracy_Percentage), "%")),  # Round the percentages
+    position = position_stack(vjust = 1.05),  # Position the text above the bars
+    size = 2.5,  # Slightly decrease font size
+    color = "black"
+  ) +
+  scale_y_continuous(
+    labels = label_percent(scale = 1),  # Format Y-axis labels as whole percentages
+    breaks = seq(0, 100, by = 25),  # Set Y-axis breaks
+    limits = c(0, 100)  # Set Y-axis limits from 0 to 100%
+  ) +
+  scale_fill_brewer(palette = "Paired") + # Use color-blind friendly color palette
+  theme_minimal() +
+  labs(title = "Claude Accuracy by Skill", x = "Skill Assessed", y = "Accuracy (%)") +
+  theme(
+    axis.text.x = element_text(angle = -45, hjust = 0, vjust = 1, size = 8, face = "bold"),  # Tilt, resize and bold x-axis labels
+    legend.position = "bottom",
+    axis.ticks.length = unit(-2, "pt"), # Shorten the tick length
+    axis.text = element_text(color = "grey20"), # Darker text for better contrast
+    plot.title = element_text(hjust = 0.5, size = 14) # Center and set title size
+  ) +
+  guides(fill = guide_legend(title = "Skills")) + # Adjust legend title
+  # Wrap the long skill label
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10))
+
+
+```
+```{r}
+
+```
+
+```{r}
+# Read the CSV file
+raw_scores <- read_csv("Raw Scores.csv")
+
+# Read the CSV file, specifying 'skip' to ignore the header and 'col_names' to directly assign column names
+raw_scores <- read_csv("Raw Scores.csv", skip = 1, col_names = c("NA", "GPT-4", "CLAUDE 3", "GEMIMI", "GPT4 & CLAUDE 3", "GPT4 & GEMINI", "CLAUDE 3 & GEMINI", "ALL"))
+
+# Drop the first column which is not needed
+raw_scores <- raw_scores %>% select(-c(`NA`))
+
+# Ensure that the Total_Correct column is numeric
+raw_scores <- mutate(raw_scores, across(everything(), as.numeric))
+
+# Pivot the data to long format
+raw_scores_long <- pivot_longer(
+  raw_scores,
+  cols = !starts_with("NA"),  # Exclude columns that start with "NA"
+  names_to = "Agent_Group",
+  values_to = "Total_Correct"
+)
+
+
+# Define your own color scheme
+custom_colors <- c("GPT-4" = "#1f77b4", 
+                   "CLAUDE 3" = "#ff7f0e", 
+                   "GEMIMI" = "#2ca02c", 
+                   "GPT4 & CLAUDE 3" = "#d62728", 
+                   "GPT4 & GEMINI" = "#9467bd", 
+                   "CLAUDE & GEMINI" = "#8c564b", 
+                   "ALL" = "#e377c2")
+
+# Create the bar plot with custom colors and raw numbers on top of the bars
+barplot <- ggplot(raw_scores_long, aes(x = Agent_Group, y = Total_Correct, fill = Agent_Group)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = custom_colors) +
+  geom_text(aes(label = Total_Correct), vjust = -0.3, color = "black", size = 3.5, position = position_dodge(width = 0.9)) +
+  scale_y_continuous(limits = c(0, 500), labels = comma) +
+  labs(title = "Total Correct Answers by Agent Group",
+       x = "Agent Group",
+       y = "Total Correct Answers") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+# Print the bar plot
+print(barplot)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

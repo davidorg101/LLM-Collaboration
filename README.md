@@ -1,7 +1,7 @@
 # LLM-Collaboration
 ## A Step Towards Collective Intelligence
 
-*ALL CODE RAN USING Jupyter Notebooks (VS Code/GOOGLE COLLABORATORY)*
+*ALL CODE RAN USING Jupyter Notebooks (VS Code/Google Collaboratory)*
 
 ### Test Preparatory (Test_Prep.ipynb):
 #### Image Captioning with GPT-4 Vision (for image questions/answers)

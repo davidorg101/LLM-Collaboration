@@ -1,7 +1,7 @@
 # LLM-Collaboration
 A Step Towards Collective Intelligence
 
-*ALL CODE RAN USING GOOGLE COLABORATORY
+*ALL CODE RAN USING GOOGLE COLABORATORY*
 
 How to run individual agent code (LLM_Test_Taking 1.ipynb):
 - pip install Claude 3 Opus, GPT-4, and Gemini 1.0 Pro

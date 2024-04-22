@@ -13,9 +13,9 @@
 #### Question Combining (to have all test questions into 1 txt file)
 - Loop through each section folder and question where you have your test questions, read the contents, and combine them into a single file.
 
-#### Answer Combiner (from individual answer txt files)
+#### Run Answer Combiner (from individual answer txt files)
 
-#### Skill and Answer Combiner (makes master answer key)
+#### Run Skill and Answer Combiner (makes master answer key)
 
 #### Unbiased Answer Skill Assessment (GPT-4)
 - Open and read the content of the test file.

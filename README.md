@@ -40,7 +40,7 @@
 - Insert API keys for each agent
 - Import Overall answer key and all individual practice questions for each topic
 - Execute round 1 section (first agent then the next agent)
-- (Optional) Run the output section to ensure each agent received the questions properly
+- (Optional) Run the output section (individual answers) to ensure each agent received the questions properly
 - Download round 1 Excel results for graded only
 - Execute round 2 section (first agent then the next agent)
 - (Optional) Run the output section to ensure each agent received the questions properly

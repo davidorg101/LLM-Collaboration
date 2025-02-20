@@ -1,4 +1,7 @@
 # LLM-Collaboration
+
+![final_results](https://github.com/user-attachments/assets/0bcd91b2-6e9d-4c1a-993a-d0496e79235c)
+
 ## A Step Towards Collective Intelligence
 
 *All code ran using Jupyter Notebooks (VS Code/Google Collaboratory)*
